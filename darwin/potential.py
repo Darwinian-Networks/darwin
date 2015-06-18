@@ -1,44 +1,53 @@
-from darwin.utils.factor_operations import (
-    factor_multiplication,
-    factor_division,
-    factor_marginalization
-    )
+from darwin.utils.potential_operations import (
+    potential_multiplication,
+    potential_division,
+    potential_marginalization,
+    potential_select_evidence,
+    potential_normalization
+)
 
 
 class Potential:
 
     def __init__(self, variables, cardinalities, values,
-                 left_hand_side=[], right_hand_side=[]):
+                 left_hand_side=[], right_hand_side=[],
+                 evidence={}):
 
         self.variables = variables
         self.cardinalities = cardinalities
         self.values = values
+        self.evidence = evidence
         self.left_hand_side = left_hand_side
         self.right_hand_side = right_hand_side
 
     def __str__(self):
-        print_out = "p({}|{}) -> {} -> [{}]".format(
+        print_out = "p({}|{}) \n    Variables: {} \n    Evidence: {}={} \n    Values: [{}]".format(
             ",".join(self.left_hand_side),
             ",".join(self.right_hand_side),
             ",".join(self.variables),
+            ",".join(list(self.evidence.keys())),
+            ",".join(format(x, "d") for x in list(self.evidence.values())),
             ", ".join(format(x, ".4f") for x in self.values))
         return print_out
 
 
 def multiply(phi1, phi2):
     (phi_variables, phi_cardinalities, phi_values, phi_left_hand_side,
-     phi_right_hand_side) = factor_multiplication(phi1.variables,
-                                                  phi1.cardinalities,
-                                                  phi1.values,
-                                                  phi1.left_hand_side,
-                                                  phi1.right_hand_side,
-                                                  phi2.variables,
-                                                  phi2.cardinalities,
-                                                  phi2.values,
-                                                  phi2.left_hand_side,
-                                                  phi2.right_hand_side)
+     phi_right_hand_side, phi_evidence) \
+        = potential_multiplication(phi1.variables,
+                                   phi1.cardinalities,
+                                   phi1.values,
+                                   phi1.left_hand_side,
+                                   phi1.right_hand_side,
+                                   phi1.evidence,
+                                   phi2.variables,
+                                   phi2.cardinalities,
+                                   phi2.values,
+                                   phi2.left_hand_side,
+                                   phi2.right_hand_side,
+                                   phi2.evidence)
     return Potential(phi_variables, phi_cardinalities, phi_values,
-                     phi_left_hand_side, phi_right_hand_side)
+                     phi_left_hand_side, phi_right_hand_side, phi_evidence)
 
 
 def multiply_all(potentials):
@@ -55,16 +64,18 @@ def multiply_all(potentials):
 
 def devide(phi1, phi2):
     (phi_variables, phi_cardinalities, phi_values, phi_left_hand_side,
-     phi_right_hand_side) = factor_division(phi1.variables,
-                                            phi1.cardinalities,
-                                            phi1.values,
-                                            phi1.left_hand_side,
-                                            phi1.right_hand_side,
-                                            phi2.variables,
-                                            phi2.cardinalities,
-                                            phi2.values,
-                                            phi2.left_hand_side,
-                                            phi2.right_hand_side,)
+     phi_right_hand_side) = potential_division(phi1.variables,
+                                               phi1.cardinalities,
+                                               phi1.values,
+                                               phi1.left_hand_side,
+                                               phi1.right_hand_side,
+                                               phi1.evidence,
+                                               phi2.variables,
+                                               phi2.cardinalities,
+                                               phi2.values,
+                                               phi2.left_hand_side,
+                                               phi2.right_hand_side,
+                                               phi2.evidence)
     return Potential(phi_variables, phi_cardinalities, phi_values,
                      phi_left_hand_side, phi_right_hand_side)
 
@@ -72,12 +83,56 @@ def devide(phi1, phi2):
 def marginalize(phi, sum_variables):
     (potential_variables, potential_cardinalities, potential_values,
      potential_left_hand_side, potential_right_hand_side) = \
-        factor_marginalization(phi.variables,
-                               phi.cardinalities,
-                               phi.values,
-                               phi.left_hand_side,
-                               phi.right_hand_side,
-                               sum_variables)
+        potential_marginalization(phi.variables,
+                                  phi.cardinalities,
+                                  phi.values,
+                                  phi.left_hand_side,
+                                  phi.right_hand_side,
+                                  sum_variables)
     return Potential(potential_variables, potential_cardinalities,
                      potential_values, potential_left_hand_side,
-                     potential_right_hand_side)
+                     potential_right_hand_side, phi.evidence)
+
+
+def evidence(set_phi, evidence):
+    """
+    Incorporate evidence by removing rows that not agree with evidence
+    from all potentials containing the evidence variables
+    """
+
+    if not isinstance(set_phi, list):
+        set_phi = [set_phi]
+
+    normalized = []
+    set_evidence_variables = set(list(evidence))
+
+    for phi in set_phi:
+        if set(phi.variables).intersection(set_evidence_variables):
+            (potential_variables,
+             potential_cardinalities,
+             potential_values,
+             potential_left_hand_side,
+             potential_right_hand_side) = potential_select_evidence(
+                phi.variables,
+                phi.cardinalities,
+                phi.values,
+                phi.left_hand_side,
+                phi.right_hand_side,
+                evidence
+            )
+            normalized.append(
+                Potential(potential_variables, potential_cardinalities,
+                          potential_values, potential_left_hand_side,
+                          potential_right_hand_side, evidence
+                          )
+            )
+        else:
+            normalized.append(phi)
+    return normalized if len(normalized) > 1 else normalized[0]
+
+
+def normalize(phi):
+    potential_values = potential_normalization(phi.values)
+    return Potential(phi.variables, phi.cardinalities,
+                     potential_values, phi.left_hand_side,
+                     phi.right_hand_side, phi.evidence)

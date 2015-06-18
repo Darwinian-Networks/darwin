@@ -2,39 +2,48 @@ from functools import reduce
 from operator import mul
 
 
-def factor_multiplication(phi1_variables, phi1_cardinalities, phi1_values,
-                          phi1_left_hand_side, phi1_right_hand_side,
-                          phi2_variables, phi2_cardinalities, phi2_values,
-                          phi2_left_hand_side, phi2_right_hand_side):
-    return factor_operation(phi1_variables, phi1_cardinalities, phi1_values,
-                            phi1_left_hand_side, phi1_right_hand_side,
-                            phi2_variables, phi2_cardinalities, phi2_values,
-                            phi2_left_hand_side, phi2_right_hand_side,
-                            'M')
+def potential_multiplication(phi1_variables, phi1_cardinalities, phi1_values,
+                             phi1_left_hand_side, phi1_right_hand_side,
+                             phi1_evidence,
+                             phi2_variables, phi2_cardinalities, phi2_values,
+                             phi2_left_hand_side, phi2_right_hand_side,
+                             phi2_evidence):
+    return potential_operation(phi1_variables, phi1_cardinalities, phi1_values,
+                               phi1_left_hand_side, phi1_right_hand_side,
+                               phi1_evidence,
+                               phi2_variables, phi2_cardinalities, phi2_values,
+                               phi2_left_hand_side, phi2_right_hand_side,
+                               phi2_evidence, 'M')
 
 
-def factor_division(phi1_variables, phi1_cardinalities, phi1_values,
-                    phi1_left_hand_side, phi1_right_hand_side,
-                    phi2_variables, phi2_cardinalities, phi2_values,
-                    phi2_left_hand_side, phi2_right_hand_side):
-    return factor_operation(phi1_variables, phi1_cardinalities, phi1_values,
-                            phi1_left_hand_side, phi1_right_hand_side,
-                            phi2_variables, phi2_cardinalities, phi2_values,
-                            phi2_left_hand_side, phi2_right_hand_side,
-                            'D')
+def potential_division(phi1_variables, phi1_cardinalities, phi1_values,
+                       phi1_left_hand_side, phi1_right_hand_side,
+                       phi1_evidence,
+                       phi2_variables, phi2_cardinalities, phi2_values,
+                       phi2_left_hand_side, phi2_right_hand_side,
+                       phi2_evidence):
+    return potential_operation(phi1_variables, phi1_cardinalities, phi1_values,
+                               phi1_left_hand_side, phi1_right_hand_side,
+                               phi1_evidence,
+                               phi2_variables, phi2_cardinalities, phi2_values,
+                               phi2_left_hand_side, phi2_right_hand_side,
+                               phi2_evidence, 'D')
 
 
-def factor_operation(phi1_variables, phi1_cardinalities, phi1_values,
-                     phi1_left_hand_side, phi1_right_hand_side,
-                     phi2_variables, phi2_cardinalities, phi2_values,
-                     phi2_left_hand_side, phi2_right_hand_side,
-                     operation):
+def potential_operation(phi1_variables, phi1_cardinalities, phi1_values,
+                        phi1_left_hand_side, phi1_right_hand_side,
+                        phi1_evidence,
+                        phi2_variables, phi2_cardinalities, phi2_values,
+                        phi2_left_hand_side, phi2_right_hand_side,
+                        phi2_evidence, operation):
 
     # Combine variables and cardinalities of both potentials
-    potential_variables, potential_cardinalities = structure_combination(
-        phi1_variables, phi1_cardinalities,
-        phi2_variables, phi2_cardinalities
-    )
+    potential_variables, potential_cardinalities \
+        = structure_combination(
+            phi1_variables, phi1_cardinalities,
+            phi2_variables, phi2_cardinalities
+        )
+    potential_evidence = evidence_combination(phi1_evidence, phi2_evidence)
 
     phi1_strides = compute_strides(phi1_variables, phi1_cardinalities,
                                    phi2_variables)
@@ -68,19 +77,19 @@ def factor_operation(phi1_variables, phi1_cardinalities, phi1_values,
                 break
 
     # Construct the product Factor
-    phi_left_hand_side, phi_right_hand_side = structure_operation(
+    potential_left_hand_side, potential_right_hand_side = structure_operation(
         phi1_left_hand_side, phi1_right_hand_side,
         phi2_left_hand_side, phi2_right_hand_side,
         operation)
 
     return (potential_variables, potential_cardinalities,
-            potential_values, phi_left_hand_side,
-            phi_right_hand_side)
+            potential_values, potential_left_hand_side,
+            potential_right_hand_side, potential_evidence)
 
 
-def factor_marginalization(phi_variables, phi_cardinalities, phi_values,
-                           phi_left_hand_side, phi_right_hand_side,
-                           sum_variables):
+def potential_marginalization(phi_variables, phi_cardinalities, phi_values,
+                              phi_left_hand_side, phi_right_hand_side,
+                              sum_variables):
 
     if not isinstance(sum_variables, list):
         sum_variables = [sum_variables]
@@ -139,6 +148,57 @@ def factor_marginalization(phi_variables, phi_cardinalities, phi_values,
             potential_left_hand_side, potential_right_hand_side)
 
 
+def potential_select_evidence(phi_variables, phi_cardinalities, phi_values,
+                              phi_left_hand_side, phi_right_hand_side,
+                              evidence):
+
+    evidence_variables = list(evidence.keys())
+
+    # Compute variables and caridnalities for new potential
+    potential_variables, potential_cardinalities = structure_reducing(
+        phi_variables, phi_cardinalities, evidence_variables)
+
+    # Compute LHS and RHS for new potential
+    potential_left_hand_side, potential_right_hand_side = \
+        structure_merginalization(
+            phi_left_hand_side, phi_right_hand_side, evidence_variables)
+
+    # Start computation of values for marginalized potential
+    potential_values = None
+
+    assignment = {var: 0 for var in phi_variables}
+    potential_size = reduce(mul, potential_cardinalities, 1)
+    phi_size = reduce(mul, phi_cardinalities, 1)
+    if potential_size > 0:
+        potential_values = [0] * potential_size
+    else:
+        potential_values = [0]
+
+    j = 0
+    for i in range(phi_size):
+
+        if all([assignment[evidence_var] == evidence[evidence_var]
+                for evidence_var in evidence]):
+            potential_values[j] = phi_values[i]
+            j = j + 1
+
+        for idx, var in enumerate(phi_variables):
+            assignment[var] += 1
+            if assignment[var] == phi_cardinalities[idx]:
+                assignment[var] = 0
+            else:
+                break
+
+    return (potential_variables, potential_cardinalities,
+            potential_values,
+            potential_left_hand_side, potential_right_hand_side)
+
+
+def potential_normalization(phi_values):
+    total_sum = sum(phi_values)
+    return [value / total_sum for value in phi_values]
+
+
 def compute_strides(phi1_variables, phi1_cardinalities,
                     phi2_variables=None):
     """
@@ -176,7 +236,16 @@ def structure_combination(phi1_variables, phi1_cardinalities,
         if var not in phi1_variables:
             variables.append(var)
             cardinalities.append(phi2_cardinalities[ind])
+
     return (variables, cardinalities)
+
+
+def evidence_combination(phi1_evidence, phi2_evidence):
+    evidence = dict(phi1_evidence)
+    for var in phi2_evidence:
+        if var not in evidence:
+            evidence[var] = phi2_evidence[var]
+    return evidence
 
 
 def structure_operation(phi1_left_hand_side, phi1_right_hand_side,
