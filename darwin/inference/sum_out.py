@@ -16,6 +16,7 @@ def sum_out(variables, potentials):
         # Update the set of potentials
         set_potentials = [p for p in set_potentials
                           if p not in common_potentials]
+
         set_potentials.append(marg_product)
 
     return set_potentials

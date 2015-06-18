@@ -1,6 +1,8 @@
-from darwin.utils.factor_operation import factor_operation
-from darwin.utils.factor_marginalization import factor_marginalization
-import numpy as np
+from darwin.utils.factor_operations import (
+    factor_multiplication,
+    factor_division,
+    factor_marginalization
+    )
 
 
 class Potential:
@@ -10,46 +12,31 @@ class Potential:
 
         self.variables = variables
         self.cardinalities = cardinalities
-        self.values = np.array(values)
+        self.values = values
         self.left_hand_side = left_hand_side
         self.right_hand_side = right_hand_side
 
     def __str__(self):
-        print_out = "p({}|{}) -> {} -> {}".format(
+        print_out = "p({}|{}) -> {} -> [{}]".format(
             ",".join(self.left_hand_side),
             ",".join(self.right_hand_side),
             ",".join(self.variables),
-            self.values)
+            ", ".join(format(x, ".4f") for x in self.values))
         return print_out
-
-    def __hash__(self):
-        """
-        Returns the hash of the factor object based on the scope of the factor
-        """
-        return hash(' '.join(self.variables) +
-                    ' '.join(map(str, self.cardinalities)) +
-                    ' '.join(list(map(str, self.values))))
-
-    def __eq__(self, other):
-        """
-        Equality between two potential
-        """
-        return self.__hash__() == other.__hash__()
 
 
 def multiply(phi1, phi2):
     (phi_variables, phi_cardinalities, phi_values, phi_left_hand_side,
-     phi_right_hand_side) = factor_operation(phi1.variables,
-                                             phi1.cardinalities,
-                                             phi1.values,
-                                             phi2.variables,
-                                             phi2.cardinalities,
-                                             phi2.values,
-                                             phi1.left_hand_side,
-                                             phi1.right_hand_side,
-                                             phi2.left_hand_side,
-                                             phi2.right_hand_side,
-                                             "M")
+     phi_right_hand_side) = factor_multiplication(phi1.variables,
+                                                  phi1.cardinalities,
+                                                  phi1.values,
+                                                  phi1.left_hand_side,
+                                                  phi1.right_hand_side,
+                                                  phi2.variables,
+                                                  phi2.cardinalities,
+                                                  phi2.values,
+                                                  phi2.left_hand_side,
+                                                  phi2.right_hand_side)
     return Potential(phi_variables, phi_cardinalities, phi_values,
                      phi_left_hand_side, phi_right_hand_side)
 
@@ -68,17 +55,16 @@ def multiply_all(potentials):
 
 def devide(phi1, phi2):
     (phi_variables, phi_cardinalities, phi_values, phi_left_hand_side,
-     phi_right_hand_side) = factor_operation(phi1.variables,
-                                             phi1.cardinalities,
-                                             phi1.values,
-                                             phi2.variables,
-                                             phi2.cardinalities,
-                                             phi2.values,
-                                             phi1.left_hand_side,
-                                             phi1.right_hand_side,
-                                             phi2.left_hand_side,
-                                             phi2.right_hand_side,
-                                             "D")
+     phi_right_hand_side) = factor_division(phi1.variables,
+                                            phi1.cardinalities,
+                                            phi1.values,
+                                            phi1.left_hand_side,
+                                            phi1.right_hand_side,
+                                            phi2.variables,
+                                            phi2.cardinalities,
+                                            phi2.values,
+                                            phi2.left_hand_side,
+                                            phi2.right_hand_side,)
     return Potential(phi_variables, phi_cardinalities, phi_values,
                      phi_left_hand_side, phi_right_hand_side)
 
@@ -92,3 +78,6 @@ def marginalize(phi, sum_variables):
                                phi.left_hand_side,
                                phi.right_hand_side,
                                sum_variables)
+    return Potential(potential_variables, potential_cardinalities,
+                     potential_values, potential_left_hand_side,
+                     potential_right_hand_side)

@@ -9,3 +9,8 @@ class BayesianNetwork:
 
     def add_dag(self, dag):
         self.dag = dag
+
+    def get_cpt(self, variable):
+        possible_cpts = [p for p in self.potentials
+                         if variable in p.left_hand_side]
+        return possible_cpts[0]
