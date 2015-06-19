@@ -1,16 +1,28 @@
-class BayesianNetwork:
+from darwin.graph_with_potentials import GraphWithPotentials
+from darwin.utils.bn_utils import moral_graph, junction_tree
+from darwin.markov_network import MarkovNetwork
 
-    def __init__(self):
-        self.potentials = []
-        self.dag = None
 
-    def add_potential(self, potential):
-        self.potentials.append(potential)
+class BayesianNetwork(GraphWithPotentials):
 
-    def add_dag(self, dag):
-        self.dag = dag
+    def get_potential(self, node):
+        return self.get_potentials(node)[0]
 
-    def get_cpt(self, variable):
-        possible_cpts = [p for p in self.potentials
-                         if variable in p.left_hand_side]
-        return possible_cpts[0]
+    def get_markov_network(self):
+
+        mn = MarkovNetwork()
+
+        # 1) Graph transformation:
+        # moralization
+        graph = moral_graph(self.graph)
+        # build join tree
+        join_tree = junction_tree(graph)
+        mn.add_graph(join_tree)
+
+        # 2) Probability tables:
+        for potential in self.potentials:
+            for node in mn.graph.nodes():
+                if set(potential.variables).issubset(set(node)):
+                    mn.add_potential(node, potential)
+
+        return mn
