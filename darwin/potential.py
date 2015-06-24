@@ -27,7 +27,7 @@ class Potential:
             ",".join(self.variables),
             ",".join(list(self.evidence.keys())),
             ",".join(format(x, "d") for x in list(self.evidence.values())),
-            ", ".join(format(x, ".4f") for x in self.values))
+            ", ".join(format(x, ".10f") for x in self.values))
         return print_out
 
 
@@ -104,31 +104,33 @@ def evidence(set_phi, evidence):
         set_phi = [set_phi]
 
     normalized = []
-    set_evidence_variables = set(list(evidence))
 
     for phi in set_phi:
-        if set(phi.variables).intersection(set_evidence_variables):
+        evidence_in_phi = {var: v for var, v in evidence.items()
+                           if var in phi.variables}
+        if len(evidence_in_phi) > 0:
             (potential_variables,
              potential_cardinalities,
              potential_values,
              potential_left_hand_side,
-             potential_right_hand_side) = potential_select_evidence(
+             potential_right_hand_side) \
+              = potential_select_evidence(
                 phi.variables,
                 phi.cardinalities,
                 phi.values,
                 phi.left_hand_side,
                 phi.right_hand_side,
-                evidence
+                evidence_in_phi
             )
             normalized.append(
                 Potential(potential_variables, potential_cardinalities,
                           potential_values, potential_left_hand_side,
-                          potential_right_hand_side, evidence
+                          potential_right_hand_side, evidence_in_phi
                           )
             )
         else:
             normalized.append(phi)
-    return normalized if len(normalized) > 1 else normalized[0]
+    return normalized
 
 
 def normalize(phi):

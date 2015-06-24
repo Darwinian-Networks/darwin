@@ -6,7 +6,7 @@ from darwin.potential import multiply_all, evidence, normalize
 class VariableElimination:
 
     def __init__(self, bn):
-        self.bn = bn
+        self.bayesian_network = bn
 
     def query(self, query_variables,
               evidence_observed=None, elimination_order=None):
@@ -15,8 +15,8 @@ class VariableElimination:
             query_variables = [query_variables]
 
         # Safe copies for removal during VE
-        graph_copy = self.bn.graph.copy()
-        potentials = self.bn.potentials
+        graph_copy = self.bayesian_network.graph.copy()
+        potentials = self.bayesian_network.potentials
 
         # Dealing with evidence.
         if evidence_observed:

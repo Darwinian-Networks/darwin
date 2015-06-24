@@ -22,3 +22,10 @@ class GraphWithPotentials:
 
     def get_potentials(self, node):
         return self.assignments[node]
+
+    def get_cardinalities(self):
+        cardinalities = {}
+        for potential in self.potentials:
+            for idx, var in enumerate(potential.variables):
+                cardinalities[var] = potential.cardinalities[idx]
+        return cardinalities

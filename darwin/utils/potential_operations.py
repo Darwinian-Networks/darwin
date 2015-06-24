@@ -176,7 +176,6 @@ def potential_select_evidence(phi_variables, phi_cardinalities, phi_values,
 
     j = 0
     for i in range(phi_size):
-
         if all([assignment[evidence_var] == evidence[evidence_var]
                 for evidence_var in evidence]):
             potential_values[j] = phi_values[i]

@@ -1,6 +1,6 @@
 from darwin.graph_with_potentials import GraphWithPotentials
-from darwin.utils.bn_utils import moral_graph, junction_tree
 from darwin.markov_network import MarkovNetwork
+from darwin.utils.bn_utils import build_join_tree, moralize
 
 
 class BayesianNetwork(GraphWithPotentials):
@@ -14,9 +14,9 @@ class BayesianNetwork(GraphWithPotentials):
 
         # 1) Graph transformation:
         # moralization
-        graph = moral_graph(self.graph)
+        moral_graph = moralize(self.graph)
         # build join tree
-        join_tree = junction_tree(graph)
+        join_tree = build_join_tree(moral_graph, self.get_cardinalities())
         mn.add_graph(join_tree)
 
         # 2) Probability tables:
@@ -24,5 +24,11 @@ class BayesianNetwork(GraphWithPotentials):
             for node in mn.graph.nodes():
                 if set(potential.variables).issubset(set(node)):
                     mn.add_potential(node, potential)
+                    break
+
+        # Nodes without potential has empty assignment
+        for node in mn.graph.nodes():
+            if node not in mn.assignments:
+                mn.assignments[node] = []
 
         return mn
