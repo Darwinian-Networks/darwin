@@ -1,6 +1,5 @@
 from darwin.potential import evidence, multiply_all, normalize
 from darwin.inference.sum_out import sum_out
-from darwin.inference.barren import remove_barren
 from darwin.modelling.d_separation import d_separation
 from darwin.utils.mn_utils import (
     propagation_path_to_node, propagation_path_from_node
@@ -54,13 +53,6 @@ class LazyPropagation:
 
     def send_message(self, node_from, node_to):
 
-        ### DEBUG
-        print()
-        print()
-        print("=============> Message from {} to {} <=============".format(
-            node_from, node_to))
-        ### --- DEBUG
-
         # Collect assigned and incoming messages
         possibly_relevant = self._collect_assigned_incoming_potentials(
             node_from, node_to)
@@ -70,60 +62,18 @@ class LazyPropagation:
         vars_to_sum_out = [v for v in node_from
                            if v not in separator_variables]
 
-        # --- USING D-SEP --
-        # # Delete independent potentials
-        # evidence_variables = list(self.evidence.keys())
-        # for potential in list(possibly_relevant):
-        #     X = potential.variables
-        #     Y = evidence_variables
-        #     Z = separator_variables
-        #     if d_separation(X, Y, Z, self.dag):
-        #         possibly_relevant.remove(potential)
+        # Delete independent potentials
+        evidence_variables = list(self.evidence.keys())
+        for potential in list(possibly_relevant):
+            X = potential.variables
+            Y = evidence_variables
+            Z = separator_variables
+            if d_separation(X, Y, Z, self.dag):
+                possibly_relevant.remove(potential)
 
-        # # Sum out node_from not in separator from relevant potentials
-        # messages = sum_out(vars_to_sum_out, possibly_relevant)
-
-        # --- NEW METHOD --
-        # Collect relevant potentials
-        while True:
-            run_again = False
-            for potential in possibly_relevant:
-                vars_in_separator = set(potential.variables).intersection(
-                    set(separator_variables))
-                vars_in_sum_out = set(potential.variables).intersection(
-                    set(vars_to_sum_out))
-                if len(vars_in_separator) > 0 and len(vars_in_sum_out) > 0:
-                    ### DEBUG
-                    print("--> Potential {} with {} in separator and {} in sum out <====".format(
-                        potential, vars_in_separator, vars_in_sum_out))
-                    ### --- DEBUG
-                    possibly_relevant = sum_out(
-                        vars_in_sum_out,
-                        possibly_relevant,
-                        is_to_remove_barren=True)
-                    run_again = True
-                    break
-            if not run_again:
-                break
-
-        ### DEBUG
-        print("++> Relevant")
-        for p in possibly_relevant:
-            print("++> All v in separator: {}".format(all([v in separator_variables for v in p.variables])))
-            print(p)
-        ### --- DEBUG
-
-        # Messages: all potentials with all variables in the separator
-        messages = [p for p in possibly_relevant
-                    if all([v in separator_variables for v in p.variables])]
-
-        ### DEBUG
-        print("++> Final Messages:")
-        for p in messages:
-            print(p)
-        print()
-        print()
-        ### --- DEBUG
+        # Sum out node_from not in separator from relevant potentials
+        messages = sum_out(vars_to_sum_out, possibly_relevant,
+                           is_to_remove_barren=True)
 
         # Send message by attaching it to respective separator
         self.separators[(node_from, node_to)].extend(messages)
@@ -143,23 +93,10 @@ class LazyPropagation:
     def _collect_assigned_incoming_potentials(self, node, except_node=None):
         collection = [p for p in self.assignments[node]]
 
-        ### DEBUG
-        print("**> Assigned potentials in {}:".format(node))
-        for p in collection:
-            print(p)
-        ### DEBUG
-        print("**> Incoming potentials to {}:".format(node))
-        ### --- DEBUG
-
         for neighbor in nx.all_neighbors(self.join_tree, node):
             if except_node and neighbor == except_node:
                 continue
             incoming_messages = self.separators[(neighbor, node)]
-            ### DEBUG
-            print(">> From neighbor {}:".format(neighbor))
-            for p in incoming_messages:
-                print(p)
-            ### --- DEBUG
             collection.extend(incoming_messages)
 
         return collection

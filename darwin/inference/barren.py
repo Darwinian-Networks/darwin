@@ -5,9 +5,13 @@ def remove_barren(vars_to_sum_out, potentials):
         changed = False
         for var in vars_to_sum_out:
             potentials_involving_var = [p for p in non_barren_potentials
-                                        if var in p.variables and len(
-                                            p.left_hand_side) == 1]
-            if len(potentials_involving_var) == 1:
+                                        if var in p.variables]
+            if len(potentials_involving_var) == 1 and len(
+                    potentials_involving_var[0].left_hand_side) == 1:
+                # DEBUG
+                print("__> Barren potentials:")
+                print(potentials_involving_var[0])
+                ### --- DEBUG
                 non_barren_potentials.remove(potentials_involving_var[0])
                 changed = True
                 break
