@@ -45,6 +45,7 @@ def potential_operation(phi1_variables, phi1_cardinalities, phi1_values,
         )
     potential_evidence = evidence_combination(phi1_evidence, phi2_evidence)
 
+    # Start computing the values of the new potential
     phi1_strides = compute_strides(phi1_variables, phi1_cardinalities,
                                    phi2_variables)
     phi2_strides = compute_strides(phi2_variables, phi2_cardinalities,
@@ -69,8 +70,10 @@ def potential_operation(phi1_variables, phi1_cardinalities, phi1_values,
             assignment[var] = assignment[var] + 1
             if assignment[var] == potential_cardinalities[idx]:
                 assignment[var] = 0
-                j = j - (potential_cardinalities[idx] - 1) * phi1_strides[var]
-                k = k - (potential_cardinalities[idx] - 1) * phi2_strides[var]
+                j = j - \
+                    (potential_cardinalities[idx] - 1) * phi1_strides[var]
+                k = k - \
+                    (potential_cardinalities[idx] - 1) * phi2_strides[var]
             else:
                 j = j + phi1_strides[var]
                 k = k + phi2_strides[var]

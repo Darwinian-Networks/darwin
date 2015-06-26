@@ -8,10 +8,6 @@ def remove_barren(vars_to_sum_out, potentials):
                                         if var in p.variables]
             if len(potentials_involving_var) == 1 and len(
                     potentials_involving_var[0].left_hand_side) == 1:
-                # DEBUG
-                print("__> Barren potentials:")
-                print(potentials_involving_var[0])
-                ### --- DEBUG
                 non_barren_potentials.remove(potentials_involving_var[0])
                 changed = True
                 break
