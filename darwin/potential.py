@@ -62,7 +62,7 @@ def multiply_all(potentials):
     return product
 
 
-def devide(phi1, phi2):
+def divide(phi1, phi2):
     (phi_variables, phi_cardinalities, phi_values, phi_left_hand_side,
      phi_right_hand_side) = potential_division(phi1.variables,
                                                phi1.cardinalities,
