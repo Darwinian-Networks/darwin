@@ -64,18 +64,19 @@ def multiply_all(potentials):
 
 def divide(phi1, phi2):
     (phi_variables, phi_cardinalities, phi_values, phi_left_hand_side,
-     phi_right_hand_side) = potential_division(phi1.variables,
-                                               phi1.cardinalities,
-                                               phi1.values,
-                                               phi1.left_hand_side,
-                                               phi1.right_hand_side,
-                                               phi1.evidence,
-                                               phi2.variables,
-                                               phi2.cardinalities,
-                                               phi2.values,
-                                               phi2.left_hand_side,
-                                               phi2.right_hand_side,
-                                               phi2.evidence)
+     phi_right_hand_side, phi_evidence) \
+        = potential_division(phi1.variables,
+                             phi1.cardinalities,
+                             phi1.values,
+                             phi1.left_hand_side,
+                             phi1.right_hand_side,
+                             phi1.evidence,
+                             phi2.variables,
+                             phi2.cardinalities,
+                             phi2.values,
+                             phi2.left_hand_side,
+                             phi2.right_hand_side,
+                             phi2.evidence)
     return Potential(phi_variables, phi_cardinalities, phi_values,
                      phi_left_hand_side, phi_right_hand_side)
 
@@ -109,6 +110,7 @@ def evidence(set_phi, evidence):
         evidence_in_phi = {var: v for var, v in evidence.items()
                            if var in phi.variables}
         if len(evidence_in_phi) > 0:
+            print(evidence_in_phi)
             (potential_variables,
              potential_cardinalities,
              potential_values,
@@ -122,10 +124,13 @@ def evidence(set_phi, evidence):
                 phi.right_hand_side,
                 evidence_in_phi
             )
+            append_evidence = {var: v for var, v in list(
+              evidence_in_phi.items())+list(phi.evidence.items()
+              )}
             normalized.append(
                 Potential(potential_variables, potential_cardinalities,
                           potential_values, potential_left_hand_side,
-                          potential_right_hand_side, evidence_in_phi
+                          potential_right_hand_side, append_evidence
                           )
             )
         else:
