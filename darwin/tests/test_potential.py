@@ -98,7 +98,11 @@ class TestPotential(unittest.TestCase):
         self.assertListEqual([round(elem, 4) for elem in list_2[2].values],
                              [0.0, 0.0024, 0.04, 0.048, 0.0, 0.0216, 0.04, 
                               0.048])
-        
+
+
+        evidence_a0_list_2 = [list_2[0].evidence["a"], list_2[1].evidence["a"], list_2[2].evidence["a"]]
+        self.assertListEqual(evidence_a0_list_2, [0, 0, 0])
+
         list_3 = evidence(list_2, {"b":1})
         self.assertListEqual([round(elem, 4) for elem in list_3[0].values],
                              [0.2])
@@ -107,7 +111,7 @@ class TestPotential(unittest.TestCase):
         self.assertListEqual([round(elem, 4) for elem in list_3[2].values],
                              [0.0024, 0.048, 0.0216, 0.048])
 
-        list_4 = evidence([self.pot_a_, self.pot_b_a, self.pot_abcd_], {"a":0, "b":1})
+        # list_4 = evidence([self.pot_a_, self.pot_b_a, self.pot_abcd_], {"a":0, "b":1})
 
     def test_normalize(self):
         npot_a0bcd_ = normalize(self.pot_a0bcd_)
